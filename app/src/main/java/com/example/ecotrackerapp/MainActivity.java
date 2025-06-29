@@ -71,7 +71,11 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
     private int downloadAttempts;
     private ArrayList<LatLong> locationsList;
     private int currentMode;
-    private static final int ACCESS_LOCATION = 1002;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
+    private boolean locationEnabled = false;
+    private boolean fineLocationGranted = false;
+    private boolean backgroundLocationGranted = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,23 +93,63 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
 
-        //getAndroidVersion();
         setNavigation(toolbar);
         setHomeScreen();
         setCancelHoldMode();
-
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_LOCATION);
-        }
-
-        if (!isLocationEnabled(this)) {
-            checkLocationServiceStatus();
-        }
+        checkLocation(this);
+        checkLocationPermissions();
         currentMode = MODE_START_LOGGING;
     }
 
+
+    private void checkLocation(Context context) {
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_on =locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean network_on =locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        locationEnabled = gps_on || network_on;
+
+        if (!locationEnabled) {
+            checkLocationServiceStatus();
+        }
+    }
+
+    private void checkLocationPermissions() {
+
+        fineLocationGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        backgroundLocationGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+        if (!fineLocationGranted) {
+            requestLocationPermissions();
+        }
+        else if (!backgroundLocationGranted){
+            requestBackgroundLocation();
+        }
+    }
+    private void requestLocationPermissions() {
+        // Android 10+ requires separate request for background location
+        ActivityCompat.requestPermissions(this,
+                new String[] {
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                },
+                LOCATION_PERMISSION_REQUEST_CODE);
+    }
+
+    private void requestBackgroundLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Background Location Required")
+                    .setMessage("This app needs background location to work properly.")
+                    .setPositiveButton("Allow", (dialog, which) -> {
+                        ActivityCompat.requestPermissions(this,
+                                new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                                LOCATION_PERMISSION_REQUEST_CODE);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }
+    }
     private void setNavigation(Toolbar toolbar) {
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navView = findViewById(R.id.nav_view);
@@ -201,16 +245,10 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
 
         if (cm == null) return false;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
-            return capabilities != null &&
-                    (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
-        } else {
-            // Pre-Marshmallow fallback
-            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            return activeNetwork != null && activeNetwork.isConnected();
-        }
+        NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
+        return capabilities != null &&
+                (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
     }
     private void getSensorSettings() {
         currentMode = MODE_GET_SETTINGS;
@@ -243,15 +281,22 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
     }
 
     private void startLogging() {
-        if (!isLocationEnabled(this)) {
-            showAlert("Location Is Off", "Location Services must be on to track GPS");
+        checkLocation(this);
+        checkLocationPermissions();
+
+        if (!locationEnabled) {
+            showAlert("Location Is Off", "Location must be on to track GPS");
+            return;
+        }
+        else if(!fineLocationGranted || !backgroundLocationGranted) {
+            showAlert("Location Permissions", "Location permission is required to track GPS");
             return;
         }
 
         setLogFile();
-        //toggleMainButton(false);
         startAttempts++;
         scanForSensors();
+        startGpsTracking();
     }
 
     private void stopLogging() {
@@ -304,9 +349,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
                 default:
                     break;
             }
-
         }
-
     }
 
     private void setStatus(String msg) {
@@ -401,7 +444,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
         IntentFilter filter = new IntentFilter("com.example.gps_tracker.LOCATION_UPDATE");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
-            registerReceiver(locationReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(locationReceiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             registerReceiver(locationReceiver, filter);
         }
@@ -510,13 +553,6 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
         unregisterReceiver(locationReceiver);
         Log.d("GPS", "tracking stopped");
     }
-    private void requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION
-            }, ACCESS_LOCATION);
-        }
-    }
 
     private void showAlert(String title, String msg) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -572,13 +608,6 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
         });
     }
 
-    private boolean isLocationEnabled(Context context) {
-        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        boolean gps_on =locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        boolean network_on =locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        return gps_on || network_on;
-    }
-
     private void checkLocationServiceStatus() {
         LocationRequest locationRequest = new LocationRequest.Builder(10000).build();
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
@@ -599,7 +628,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
                     ResolvableApiException resolvable = (ResolvableApiException) e;
                     resolvable.startResolutionForResult(this, 1001);
                 } catch (IntentSender.SendIntentException sendEx) {
-                    sendEx.printStackTrace();
+                    Log.e("E", "Error reading file", e);
                 }
             }
         });
@@ -636,7 +665,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothStatusLi
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == ACCESS_LOCATION) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 showAlert("Location Denied", "Location access is required for GPS tracking");
             }

@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.ecotrackerapp"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -34,11 +34,11 @@ android {
 
 dependencies {
 
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    implementation(libs.material.v1110)
+    implementation(libs.drawerlayout)
+    implementation(libs.appcompat.v161)
+    implementation(libs.play.services.location)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(libs.appcompat)
     implementation(libs.material)
