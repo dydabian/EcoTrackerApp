@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">GPS Logger</string>
+    <string name="title">GPS-Temp Logger</string>
+
+    <string name="home">To start logging: \n\n1. Turn on bluetooth \n\n
+        2. Turn on the temperature sensor \n\n3. Hold sensor next to phone and tap Start \n\n
+    All prior data on the sensor will be deleted</string>
+    <string name="logging_start">GPS tracking started. \n\nWaiting for first reading.
+        \n\nIf more than 1 minute passes before the first reading, turn
+        on cellular data to help the location service.
+        \n\n</string>
+    <string name="logging">Other apps can be used while logging\n\nTo stop or cancel, press the button for 3 seconds
+    </string>
+    <string name="logging_resumed">Logging resumed. Waiting for next GPS reading </string>
+    <string name="stop_logging">1. Make sure bluetooth is on.\n\n  Hold sensor next to phone and tap Download
+    \n\n 3. Turn off sensor after the download is complete \n\n  To resume logging, tap Cancel</string>
+    <string name="confirm_download">The sensor will be cleared after the data is downloaded.
+        \n\n Do you wish to continue?</string>
+    <string name="confirm_clear">All data will be deleted from the sensor.
+        \n Do you wish to continue?</string>
+    <string name="command_block">All functions are disabled while logging is on.
+        \n\n Stop logging before running any other commands.</string>
+    <string name="scanning">Scanning for sensor</string>
+    <string name="connect">Connecting to sensor</string>
+    <string name="connected">Connected to sensor</string>
+    <string name="sending">Sending command</string>
+    <string name="connect_fail">Unable to connect to sensor</string>
+    <string name="command_send_fail">Unable to send command to sensor</string>
+    <string name="disconnect">Sensor disconnected before command completed</string>
+    <string name="clear_sensor">Sensor found \n\nClearing sensor data</string>
+    <string name="downloading">Downloading temperature data\n\n Received %1$d of %2$d</string>
+    <string name="download_fail">Download attempt failed. Retrying</string>
+    <string name="scan_failed">No sensors were found.  \n\nMake sure the sensor and bluetooth are on
+        and tap again</string>
+    <string name="scan_many">More than one sensor was found.  \n\n Move away from the other sensors
+        and tap again</string>
+
+    <string name="button_start">Start</string>
+    <string name="button_stop">Stop</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_download">Download</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_download">Download Sensor Data</string>
+    <string name="menu_clear">Clear Sensor Data</string>
+    <string name="menu_settings">View Sensor Settings</string>
+    <string name="menu_email">Email Data</string>
+    <string name="menu_close">Close App</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+</resources>
